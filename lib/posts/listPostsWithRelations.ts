@@ -1,37 +1,50 @@
 import { query } from "@/lib/db";
 import { mapCommentRow } from "@/lib/comments/mapComment";
 import { mapPostRow } from "@/lib/posts/mapPost";
-import { LIST_POSTS_WITH_RELATIONS_SQL } from "@/lib/posts/postsJoinQuery";
+import {
+  mapPostForClient,
+  normalizeCommentsJson,
+} from "@/lib/posts/mapPostForClient";
+import {
+  GET_POST_WITH_RELATIONS_SQL,
+  LIST_POSTS_BY_USER_SQL,
+  LIST_POSTS_WITH_RELATIONS_SQL,
+} from "@/lib/posts/postsJoinQuery";
+import type { ClientPost } from "@/lib/types/clientPost";
 import type { ApiComment, CommentRow } from "@/lib/types/comment";
-import type { ApiPost, PostRow } from "@/lib/types/post";
-
-export type ApiPostWithRelations = ApiPost & {
-  comments: ApiComment[];
-  tags: string[];
-};
+import type { PostRow } from "@/lib/types/post";
 
 type JoinRow = PostRow & {
-  comments: CommentRow[] | null;
-  tags: (string | null)[] | null;
+  author_username: string;
+  author_avatar_url: string;
+  comments: unknown;
+  tags: unknown;
 };
 
-function normalizeComments(raw: CommentRow[] | null): ApiComment[] {
-  if (!raw?.length) return [];
-  return raw.map(mapCommentRow);
+function rowToClientPost(row: JoinRow): ClientPost {
+  const post = mapPostRow(row);
+  return mapPostForClient(post, {
+    authorUsername: row.author_username,
+    authorAvatarUrl: row.author_avatar_url,
+    comments: normalizeCommentsJson(row.comments),
+  });
 }
 
-function normalizeTags(raw: (string | null)[] | null): string[] {
-  if (!raw?.length) return [];
-  return raw.filter((t): t is string => typeof t === "string" && t.length > 0);
-}
-
-export async function listPostsWithRelations(): Promise<ApiPostWithRelations[]> {
+export async function listPostsForClient(): Promise<ClientPost[]> {
   const rows = await query<JoinRow>(LIST_POSTS_WITH_RELATIONS_SQL);
-  return rows.map((row) => ({
-    ...mapPostRow(row),
-    comments: normalizeComments(row.comments),
-    tags: normalizeTags(row.tags),
-  }));
+  return rows.map(rowToClientPost);
+}
+
+export async function listPostsByUserForClient(userId: string): Promise<ClientPost[]> {
+  const rows = await query<JoinRow>(LIST_POSTS_BY_USER_SQL, [userId]);
+  return rows.map(rowToClientPost);
+}
+
+export async function getPostForClient(postId: string): Promise<ClientPost | null> {
+  const rows = await query<JoinRow>(GET_POST_WITH_RELATIONS_SQL, [postId]);
+  const row = rows[0];
+  if (!row) return null;
+  return rowToClientPost(row);
 }
 
 export async function listCommentsForPost(postId: string): Promise<ApiComment[]> {
@@ -48,4 +61,9 @@ export async function listCommentsForPost(postId: string): Promise<ApiComment[]>
 export async function postExists(postId: string): Promise<boolean> {
   const rows = await query<{ id: string }>(`SELECT id FROM posts WHERE id = $1`, [postId]);
   return Boolean(rows[0]);
+}
+
+/** @deprecated Usar listPostsForClient — conservado para compat interna. */
+export async function listPostsWithRelations() {
+  return listPostsForClient();
 }

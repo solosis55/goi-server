@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { jsonError, serverError, validationError } from "@/lib/http/apiError";
+import { getPostForClient } from "@/lib/posts/listPostsWithRelations";
 import { mapPostRow } from "@/lib/posts/mapPost";
 import { updatePostSchema } from "@/lib/schemas/postSchema";
 import type { PostRow } from "@/lib/types/post";
@@ -14,31 +15,7 @@ async function findPostById(id: string): Promise<PostRow | null> {
   return rows[0] ?? null;
 }
 
-/** GET una publicación (≈ GET /api/notes/:id). */
-export async function GET(_request: Request, context: RouteContext) {
-  const { id } = await context.params;
-  try {
-    const post = await findPostById(id);
-    if (!post) {
-      return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
-    }
-    return NextResponse.json(mapPostRow(post));
-  } catch {
-    return serverError("No se pudo obtener la publicación");
-  }
-}
-
-/** PATCH actualización parcial (≈ PATCH /api/notes/:id). */
-export async function PATCH(request: Request, context: RouteContext) {
-  const { id } = await context.params;
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return validationError([{ message: "JSON no válido" }]);
-  }
-
+async function updatePostById(id: string, body: unknown) {
   const parsed = updatePostSchema.safeParse(body);
   if (!parsed.success) {
     return validationError(parsed.error.flatten());
@@ -67,13 +44,53 @@ export async function PATCH(request: Request, context: RouteContext) {
     );
     const updated = rows[0];
     if (!updated) return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
-    return NextResponse.json(mapPostRow(updated));
+
+    const enriched = await getPostForClient(updated.id);
+    return NextResponse.json(enriched ?? mapPostRow(updated));
   } catch {
     return serverError("No se pudo actualizar la publicación");
   }
 }
 
-/** DELETE — 204 sin cuerpo; CASCADE borra post_comments (≈ DELETE /api/notes/:id). */
+/** GET una publicación con autor y comentarios. */
+export async function GET(_request: Request, context: RouteContext) {
+  const { id } = await context.params;
+  try {
+    const post = await getPostForClient(id);
+    if (!post) {
+      return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
+    }
+    return NextResponse.json(post);
+  } catch {
+    return serverError("No se pudo obtener la publicación");
+  }
+}
+
+/** PATCH actualización parcial. */
+export async function PATCH(request: Request, context: RouteContext) {
+  const { id } = await context.params;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return validationError([{ message: "JSON no válido" }]);
+  }
+  return updatePostById(id, body);
+}
+
+/** Alias PUT para Goi App (`updatePost` usa PUT). */
+export async function PUT(request: Request, context: RouteContext) {
+  const { id } = await context.params;
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return validationError([{ message: "JSON no válido" }]);
+  }
+  return updatePostById(id, body);
+}
+
+/** DELETE — 204 sin cuerpo. */
 export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {

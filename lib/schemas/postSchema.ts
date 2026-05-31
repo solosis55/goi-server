@@ -5,6 +5,9 @@ export const POST_CONTENT_MAX = 280;
 
 export const createPostSchema = z.object({
   userId: z.string().uuid("userId debe ser un UUID válido"),
+  /** Sincroniza el usuario de la app en Neon si aún no existe. */
+  username: z.string().trim().min(1).max(32).optional(),
+  avatarUrl: z.string().max(2000).optional(),
   content: z
     .string()
     .trim()

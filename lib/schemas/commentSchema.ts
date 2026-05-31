@@ -5,6 +5,8 @@ export const COMMENT_CONTENT_MAX = 180;
 
 export const createCommentSchema = z.object({
   userId: z.string().uuid("userId debe ser un UUID válido"),
+  username: z.string().trim().min(1).max(32).optional(),
+  avatarUrl: z.string().max(2000).optional(),
   content: z
     .string()
     .trim()

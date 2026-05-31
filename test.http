@@ -1,0 +1,85 @@
+# Goi Server — pruebas API (REST Client en Cursor / VS Code)
+#
+# Requisitos:
+#   1. npm run dev  (http://localhost:4000)
+#   2. npm run db:seed  → copia userId si cambia
+#
+# Uso: abre este archivo y pulsa "Send Request" sobre cada bloque ### 
+# (extensión REST Client, suele venir en Cursor/VS Code).
+#
+# Tras POST post / POST comment, pega los id devueltos en @postId y @commentId.
+
+@baseUrl = http://localhost:4000
+@userId = c2aa9d01-2fe1-4b6a-a538-f40119fe6838
+@postId = REEMPLAZA_CON_ID_DE_POST
+@commentId = REEMPLAZA_CON_ID_DE_COMENTARIO
+
+### Health — servidor vivo (no usa BD)
+GET {{baseUrl}}/api/health
+
+### Health — conexión Neon (SELECT 1)
+GET {{baseUrl}}/api/health/db
+
+### Posts — listar con LEFT JOIN (comments + tags)
+GET {{baseUrl}}/api/posts
+
+### Posts — crear publicación (201)
+# @name createPost
+POST {{baseUrl}}/api/posts
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "content": "Publicación de prueba desde test.http",
+  "format": "standard",
+  "visibility": "public"
+}
+
+### Posts — ver una publicación
+GET {{baseUrl}}/api/posts/{{postId}}
+
+### Posts — actualizar publicación (PATCH)
+PATCH {{baseUrl}}/api/posts/{{postId}}
+Content-Type: application/json
+
+{
+  "content": "Publicación editada desde test.http"
+}
+
+### Posts — comentarios de un post (GET)
+GET {{baseUrl}}/api/posts/{{postId}}/comments
+
+### Posts — añadir comentario (201) ≈ checklist-item
+# @name createComment
+POST {{baseUrl}}/api/posts/{{postId}}/comments
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "content": "Comentario desde test.http"
+}
+
+### Comentarios — editar (PATCH)
+PATCH {{baseUrl}}/api/comments/{{commentId}}
+Content-Type: application/json
+
+{
+  "content": "Comentario editado"
+}
+
+### Comentarios — borrar (204 sin cuerpo)
+DELETE {{baseUrl}}/api/comments/{{commentId}}
+
+### Posts — borrar publicación (204)
+DELETE {{baseUrl}}/api/posts/{{postId}}
+
+###
+# --- SQL opcional (ejecutar en extensión Neon, NO en REST Client) ---
+#
+# SELECT table_name FROM information_schema.tables
+# WHERE table_schema = 'public' ORDER BY table_name;
+#
+# SELECT * FROM posts ORDER BY created_at DESC;
+# SELECT * FROM post_comments;
+#
+# Ver sql/queries.sql para el JOIN completo.

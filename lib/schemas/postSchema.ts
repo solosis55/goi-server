@@ -4,10 +4,6 @@ import { z } from "zod";
 export const POST_CONTENT_MAX = 280;
 
 export const createPostSchema = z.object({
-  userId: z.string().uuid("userId debe ser un UUID válido"),
-  /** Sincroniza el usuario de la app en Neon si aún no existe. */
-  username: z.string().trim().min(1).max(32).optional(),
-  avatarUrl: z.string().max(2000).optional(),
   content: z
     .string()
     .trim()
@@ -16,6 +12,7 @@ export const createPostSchema = z.object({
   format: z.enum(["standard", "training"]).default("standard"),
   visibility: z.enum(["public", "followers", "private"]).default("public"),
   sessionId: z.string().uuid().nullable().optional(),
+  media: z.array(z.unknown()).optional(),
 });
 
 export const updatePostSchema = z

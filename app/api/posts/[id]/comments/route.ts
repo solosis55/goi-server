@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { mapCommentRow } from "@/lib/comments/mapComment";
+import { requireAuthUserId } from "@/lib/auth/requestAuth";
 import { mapCommentJson } from "@/lib/posts/mapPostForClient";
 import { listCommentsForPost, postExists } from "@/lib/posts/listPostsWithRelations";
 import { jsonError, serverError, validationError } from "@/lib/http/apiError";
 import { createCommentSchema } from "@/lib/schemas/commentSchema";
-import { ensureAppUser } from "@/lib/users/ensureAppUser";
+import { findUserById } from "@/lib/users/repository";
 import type { CommentRow } from "@/lib/types/comment";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -47,6 +47,10 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function POST(request: Request, context: RouteContext) {
+  const auth = requireAuthUserId(request);
+  if (auth instanceof Response) return auth;
+  const userId = auth;
+
   const { id: postId } = await context.params;
 
   if (!(await postExists(postId))) {
@@ -65,11 +69,12 @@ export async function POST(request: Request, context: RouteContext) {
     return validationError(parsed.error.flatten());
   }
 
-  const { userId, content, username, avatarUrl } = parsed.data;
+  const { content } = parsed.data;
 
   try {
-    if (username) {
-      await ensureAppUser({ id: userId, username, avatarUrl });
+    const author = await findUserById(userId);
+    if (!author) {
+      return jsonError(401, "AUTH_SESSION_STALE", "Usuario no encontrado");
     }
 
     const rows = await query<CommentRow>(
@@ -81,12 +86,6 @@ export async function POST(request: Request, context: RouteContext) {
     const created = rows[0];
     if (!created) return serverError("No se pudo crear el comentario");
 
-    const authorRows = await query<{ username: string; avatar_url: string }>(
-      `SELECT username, avatar_url FROM users WHERE id = $1`,
-      [userId]
-    );
-    const author = authorRows[0];
-
     return NextResponse.json(
       mapCommentJson({
         id: created.id,
@@ -95,8 +94,8 @@ export async function POST(request: Request, context: RouteContext) {
         content: created.content,
         created_at: created.created_at,
         updated_at: created.updated_at,
-        author_username: author?.username ?? username ?? "Usuario",
-        author_avatar_url: author?.avatar_url ?? avatarUrl ?? "",
+        author_username: author.username,
+        author_avatar_url: author.avatar_url,
       }),
       { status: 201 }
     );
@@ -104,7 +103,7 @@ export async function POST(request: Request, context: RouteContext) {
     const code = (err as { code?: string }).code;
     if (code === "23503") {
       return NextResponse.json(
-        { code: "COMMENT_INVALID_INPUT", message: "El usuario (userId) no existe. Envía username para sincronizar." },
+        { code: "COMMENT_INVALID_INPUT", message: "El usuario no existe" },
         { status: 400 }
       );
     }

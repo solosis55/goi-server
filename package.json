@@ -9,20 +9,35 @@
     "start": "next start --port 4000",
     "lint": "eslint .",
     "db:schema": "node scripts/apply-schema.mjs",
-    "db:seed": "node scripts/seed-demo-user.mjs"
+    "db:seed": "node scripts/seed-demo-user.mjs",
+    "db:migrate-users": "node scripts/migrate-users-from-store.mjs",
+    "db:migrate-posts": "node scripts/migrate-posts-from-store.mjs",
+    "db:migrate-post-media": "node scripts/migrate-post-media-to-files.mjs",
+    "db:migrate-likes": "node scripts/migrate-likes-from-store.mjs",
+    "db:ensure-social": "node scripts/ensure-user-profile-columns.mjs",
+    "db:migrate-follows": "node scripts/migrate-follows-from-store.mjs",
+    "db:migrate-notification-reads": "node scripts/migrate-notification-reads-from-store.mjs",
+    "db:migrate-workouts": "node scripts/migrate-workouts-from-store.mjs",
+    "db:ensure-social-tables": "node scripts/ensure-social-tables.mjs",
+    "db:ensure-auth-profile-extras": "node scripts/ensure-auth-profile-extras.mjs",
+    "db:setup": "node scripts/db-setup-all.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "next": "^16.2.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "dotenv": "^17.4.2",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.6",
     "typescript": "^6.0.3"

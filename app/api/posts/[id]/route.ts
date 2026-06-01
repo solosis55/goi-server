@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { getAuthUserIdFromRequest } from "@/lib/auth/requestAuth";
 import { jsonError, serverError, validationError } from "@/lib/http/apiError";
 import { getPostForClient } from "@/lib/posts/listPostsWithRelations";
 import { mapPostRow } from "@/lib/posts/mapPost";
@@ -15,7 +16,7 @@ async function findPostById(id: string): Promise<PostRow | null> {
   return rows[0] ?? null;
 }
 
-async function updatePostById(id: string, body: unknown) {
+async function updatePostById(id: string, body: unknown, request: Request) {
   const parsed = updatePostSchema.safeParse(body);
   if (!parsed.success) {
     return validationError(parsed.error.flatten());
@@ -23,7 +24,7 @@ async function updatePostById(id: string, body: unknown) {
 
   const existing = await findPostById(id);
   if (!existing) {
-    return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
+    return jsonError(404, "POST_NOT_FOUND", "La publicaci?n no existe");
   }
 
   const next = {
@@ -43,39 +44,41 @@ async function updatePostById(id: string, body: unknown) {
       [id, next.content, next.format, next.visibility, next.sessionId]
     );
     const updated = rows[0];
-    if (!updated) return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
+    if (!updated) return jsonError(404, "POST_NOT_FOUND", "La publicaci?n no existe");
 
-    const enriched = await getPostForClient(updated.id);
+    const viewerUserId = getAuthUserIdFromRequest(request);
+    const enriched = await getPostForClient(updated.id, viewerUserId);
     return NextResponse.json(enriched ?? mapPostRow(updated));
   } catch {
-    return serverError("No se pudo actualizar la publicación");
+    return serverError("No se pudo actualizar la publicaci?n");
   }
 }
 
-/** GET una publicación con autor y comentarios. */
-export async function GET(_request: Request, context: RouteContext) {
+/** GET una publicaci?n con autor y comentarios. */
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
-    const post = await getPostForClient(id);
+    const viewerUserId = getAuthUserIdFromRequest(request);
+    const post = await getPostForClient(id, viewerUserId);
     if (!post) {
-      return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
+      return jsonError(404, "POST_NOT_FOUND", "La publicaci?n no existe");
     }
     return NextResponse.json(post);
   } catch {
-    return serverError("No se pudo obtener la publicación");
+    return serverError("No se pudo obtener la publicaci?n");
   }
 }
 
-/** PATCH actualización parcial. */
+/** PATCH actualizaci?n parcial. */
 export async function PATCH(request: Request, context: RouteContext) {
   const { id } = await context.params;
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return validationError([{ message: "JSON no válido" }]);
+    return validationError([{ message: "JSON no v?lido" }]);
   }
-  return updatePostById(id, body);
+  return updatePostById(id, body, request);
 }
 
 /** Alias PUT para Goi App (`updatePost` usa PUT). */
@@ -85,12 +88,12 @@ export async function PUT(request: Request, context: RouteContext) {
   try {
     body = await request.json();
   } catch {
-    return validationError([{ message: "JSON no válido" }]);
+    return validationError([{ message: "JSON no v?lido" }]);
   }
-  return updatePostById(id, body);
+  return updatePostById(id, body, request);
 }
 
-/** DELETE — 204 sin cuerpo. */
+/** DELETE ��� 204 sin cuerpo. */
 export async function DELETE(_request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
@@ -99,10 +102,10 @@ export async function DELETE(_request: Request, context: RouteContext) {
       [id]
     );
     if (!rows[0]) {
-      return jsonError(404, "POST_NOT_FOUND", "La publicación no existe");
+      return jsonError(404, "POST_NOT_FOUND", "La publicaci?n no existe");
     }
     return new NextResponse(null, { status: 204 });
   } catch {
-    return serverError("No se pudo eliminar la publicación");
+    return serverError("No se pudo eliminar la publicaci?n");
   }
 }

@@ -52,6 +52,7 @@ export function mapPostForClient(
     comments?: ClientComment[];
     likesCount?: number;
     likedByMe?: boolean;
+    hasMedia?: boolean;
   }
 ): ClientPost {
   return {
@@ -63,6 +64,8 @@ export function mapPostForClient(
     format: post.format,
     sessionId: post.sessionId,
     workoutId: null,
+    ...(post.media?.length ? { media: post.media } : {}),
+    ...(opts.hasMedia ? { hasMedia: true } : {}),
     visibility: post.visibility,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,

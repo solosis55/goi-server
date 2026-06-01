@@ -23,7 +23,7 @@ const pool = new Pool({ connectionString: url });
 
 async function main() {
   await pool.query(sql);
-  console.log("Esquema aplicado: users, posts, post_comments");
+  console.log("Esquema aplicado: users, posts, post_comments, post_tags, post_likes");
   await pool.end();
 }
 

@@ -148,6 +148,18 @@ INNER JOIN users u ON u.id = p.user_id
 WHERE p.user_id = $1::uuid
 `.trim();
 
+/** Por ids; params: [uuid[], viewerUserId | null] */
+export const LIST_POSTS_BY_IDS_GRID_SQL = `
+SELECT
+  ${POST_CORE_LIST},
+  ${likesFields("$2")},
+  '[]'::json AS comments,
+  ${TAGS_AGG}
+FROM posts p
+INNER JOIN users u ON u.id = p.user_id
+WHERE p.id = ANY($1::uuid[])
+`.trim();
+
 /** Detalle; params: [viewerUserId | null, postId] */
 export const GET_POST_WITH_RELATIONS_SQL = `
 SELECT

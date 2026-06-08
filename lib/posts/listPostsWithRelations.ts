@@ -11,7 +11,6 @@ import {
   LIST_POSTS_BY_USER_GRID_SQL,
   LIST_POSTS_BY_USER_SQL,
   LIST_POSTS_FEED_SQL,
-  LIST_POSTS_WITH_RELATIONS_SQL,
 } from "@/lib/posts/postsJoinQuery";
 import { cursorFromClientPost, decodePostCursor } from "@/lib/posts/postCursor";
 import { enrichPostsWithSessionMeta } from "@/lib/posts/postSessionMeta";
@@ -42,11 +41,6 @@ function rowToClientPost(row: JoinRow, opts?: { feedMedia?: boolean }): ClientPo
     likedByMe: Boolean(row.liked_by_me),
     hasMedia: Boolean(row.has_media),
   });
-}
-
-export async function listPostsForClient(viewerUserId?: string | null): Promise<ClientPost[]> {
-  const rows = await query<JoinRow>(LIST_POSTS_WITH_RELATIONS_SQL, [viewerUserId ?? null]);
-  return enrichPostsWithSessionMeta(rows.map((row) => rowToClientPost(row)));
 }
 
 /** Feed: límite en SQL; media = solo rutas `/uploads/posts/...`. */
@@ -180,9 +174,4 @@ export async function listCommentsForPost(postId: string): Promise<ApiComment[]>
 export async function postExists(postId: string): Promise<boolean> {
   const rows = await query<{ id: string }>(`SELECT id FROM posts WHERE id = $1`, [postId]);
   return Boolean(rows[0]);
-}
-
-/** @deprecated Usar listPostsForClient — conservado para compat interna. */
-export async function listPostsWithRelations(viewerUserId?: string | null) {
-  return listPostsForClient(viewerUserId);
 }

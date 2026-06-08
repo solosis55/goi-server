@@ -14,6 +14,9 @@ export type UserRow = {
   instagram_url: string;
   strava_url: string;
   location: string;
+  latitude: number | null;
+  longitude: number | null;
+  location_updated_at: string | null;
   profile_visibility: ProfileVisibility;
   pinned_post_id: string | null;
   discoverable: boolean;
@@ -36,6 +39,8 @@ export type SafeUserDto = {
   instagramUrl: string;
   stravaUrl: string;
   location: string;
+  /** Solo en perfil propio: el usuario tiene coordenadas GPS guardadas. */
+  hasGeoLocation?: boolean;
   profileVisibility: ProfileVisibility;
   profileSections: {
     bio: "public" | "followers" | "private";
@@ -56,8 +61,21 @@ export type ProfileUserDto = Omit<SafeUserDto, "email"> & {
   restrictedToFollowers?: boolean;
 };
 
-export function mapUserRowToSafeUser(row: UserRow, opts?: { includeEmail?: boolean }): SafeUserDto {
+function rowHasGeo(row: UserRow): boolean {
+  return (
+    typeof row.latitude === "number" &&
+    Number.isFinite(row.latitude) &&
+    typeof row.longitude === "number" &&
+    Number.isFinite(row.longitude)
+  );
+}
+
+export function mapUserRowToSafeUser(
+  row: UserRow,
+  opts?: { includeEmail?: boolean; isOwner?: boolean }
+): SafeUserDto {
   const vis = row.profile_visibility ?? "public";
+  const isOwner = opts?.isOwner ?? opts?.includeEmail;
   return {
     id: row.id,
     username: row.username,
@@ -71,6 +89,7 @@ export function mapUserRowToSafeUser(row: UserRow, opts?: { includeEmail?: boole
     instagramUrl: row.instagram_url ?? "",
     stravaUrl: row.strava_url ?? "",
     location: row.location ?? "",
+    ...(isOwner ? { hasGeoLocation: rowHasGeo(row) } : {}),
     profileVisibility: vis,
     profileSections: {
       bio: "public",
@@ -93,7 +112,7 @@ export function mapUserRowToProfileUser(
   opts?: { restricted?: boolean }
 ): ProfileUserDto {
   const isOwner = viewerId === row.id;
-  const base = mapUserRowToSafeUser(row, { includeEmail: isOwner });
+  const base = mapUserRowToSafeUser(row, { includeEmail: isOwner, isOwner });
   const { email, ...rest } = base;
   const profile: ProfileUserDto = {
     ...rest,

@@ -1,12 +1,10 @@
-import {
-  loadOutgoingFollowStatusMap,
-  mapRankedToDiscoverDto,
-} from "@/lib/discover/discoverDto";
+import { mapRankedToDiscoverDto } from "@/lib/discover/discoverDto";
 import { rankDiscoverUsersOptimized } from "@/lib/discover/discoverUsers";
 import { getBlockedIdsForUser } from "@/lib/social/blocksRepository";
 import {
   getActiveFollowingIds,
   getFollowerIds,
+  getOutgoingFollowStatusMap,
   listPendingIncomingRequests,
   listPendingSentRequests,
   mapSocialPreviews,
@@ -32,7 +30,7 @@ export async function buildSocialHubPayload(viewerId: string, opts?: { lite?: bo
     weekly,
   ] = await Promise.all([
     rankDiscoverUsersOptimized(viewerId, discoverLimit),
-    loadOutgoingFollowStatusMap(viewerId),
+    getOutgoingFollowStatusMap(viewerId),
     getActiveFollowingIds(viewerId),
     getFollowerIds(viewerId),
     listPendingIncomingRequests(viewerId),

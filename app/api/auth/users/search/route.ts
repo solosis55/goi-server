@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAuthUserId } from "@/lib/auth/requestAuth";
-import { loadOutgoingFollowStatusMap, mapUserToDiscoverDto } from "@/lib/discover/discoverDto";
+import { mapUserToDiscoverDto } from "@/lib/discover/discoverDto";
 import { searchDiscoverableUsers } from "@/lib/discover/userSearch";
+import { getOutgoingFollowStatusMap } from "@/lib/social/followsRepository";
 import { serverError } from "@/lib/http/apiError";
 
 export async function GET(request: Request) {
@@ -16,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const [matches, statusMap] = await Promise.all([
       searchDiscoverableUsers(auth, q, limit),
-      loadOutgoingFollowStatusMap(auth),
+      getOutgoingFollowStatusMap(auth),
     ]);
     const users = matches.map((u) => mapUserToDiscoverDto(u, auth, statusMap));
     return NextResponse.json({ users });

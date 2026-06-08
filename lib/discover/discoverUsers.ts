@@ -1,4 +1,5 @@
 import { query } from "@/lib/db";
+import { isNearbyMatch } from "@/lib/geo/nearby";
 import { isProfileDiscoverable } from "@/lib/discover/profileVisibility";
 import type { UserRow } from "@/lib/users/types";
 import { findUserById } from "@/lib/users/repository";
@@ -17,6 +18,9 @@ export type RankedDiscoverUser = {
   reason: string;
   activeThisWeek: boolean;
   trainedThisWeek: boolean;
+  /** Distancia en km si ambos tienen GPS; null si solo coincide texto. */
+  distanceKm: number | null;
+  nearby: boolean;
 };
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -53,7 +57,8 @@ async function loadDiscoverContext(viewerId: string): Promise<DiscoverContext | 
     query<UserRow>(
       `SELECT id, username, '' AS email, '' AS password_hash, bio, goal, avatar_url,
               banner_url, banner_show_in_feed, website_url, instagram_url, strava_url,
-              location, profile_visibility, pinned_post_id,
+              location, latitude, longitude, location_updated_at,
+              profile_visibility, pinned_post_id,
               COALESCE(discoverable, TRUE) AS discoverable,
               COALESCE(notification_prefs, '{"mutedTypes":[]}'::jsonb) AS notification_prefs,
               created_at::text, updated_at::text
@@ -131,10 +136,17 @@ function mutualsForTarget(
   return ids;
 }
 
+function nearbyReasonLabel(distanceKm: number | null): string {
+  if (distanceKm == null) return "Cerca de ti";
+  if (distanceKm < 1) return "A menos de 1 km";
+  return `A ${Math.round(distanceKm)} km`;
+}
+
 function buildReason(input: {
   mutualCount: number;
   sameGoal: boolean;
-  sameLocation: boolean;
+  nearby: boolean;
+  nearbyDistanceKm: number | null;
   activeThisWeek: boolean;
   trainedThisWeek: boolean;
   sharedWorkouts: number;
@@ -151,7 +163,7 @@ function buildReason(input: {
   }
   if (input.trainedThisWeek) return "Entrenó esta semana";
   if (input.sameGoal && input.goal) return input.goal;
-  if (input.sameLocation) return "Cerca de ti";
+  if (input.nearby) return nearbyReasonLabel(input.nearbyDistanceKm);
   if (input.activeThisWeek) return "Activo esta semana";
   if (input.goal) return input.goal;
   if (input.bio) return input.bio;
@@ -160,7 +172,6 @@ function buildReason(input: {
 
 function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
   const viewerGoal = norm(viewer.goal);
-  const viewerLocation = norm(viewer.location);
   const ranked: RankedDiscoverUser[] = [];
 
   for (const candidate of ctx.usersById.values()) {
@@ -171,8 +182,7 @@ function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
     const mutualIds = mutualsForTarget(ctx, candidate.id);
     const mutualCount = mutualIds.length;
     const sameGoal = viewerGoal.length > 0 && viewerGoal === norm(candidate.goal);
-    const sameLocation =
-      viewerLocation.length > 0 && viewerLocation === norm(candidate.location);
+    const nearbyMatch = isNearbyMatch(viewer, candidate);
     const active = isActiveThisWeek(ctx, candidate.id);
     const trained = trainedThisWeek(ctx, candidate.id);
     const sharedWorkouts = sharedWorkoutCount(ctx, candidate.id);
@@ -182,7 +192,7 @@ function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
     if (sharedWorkouts > 0) score += 10;
     if (trained) score += 7;
     if (sameGoal) score += 8;
-    if (sameLocation) score += 5;
+    if (nearbyMatch.nearby) score += nearbyMatch.distanceKm != null ? 8 : 5;
     if (active) score += 6;
 
     const mutualPreview: DiscoverMutualPreview[] = mutualIds.slice(0, 2).map((id) => {
@@ -195,7 +205,8 @@ function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
     const reason = buildReason({
       mutualCount,
       sameGoal,
-      sameLocation,
+      nearby: nearbyMatch.nearby,
+      nearbyDistanceKm: nearbyMatch.distanceKm,
       activeThisWeek: active,
       trainedThisWeek: trained,
       sharedWorkouts,
@@ -211,6 +222,8 @@ function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
       reason,
       activeThisWeek: active,
       trainedThisWeek: trained,
+      distanceKm: nearbyMatch.distanceKm,
+      nearby: nearbyMatch.nearby,
     });
   }
 
@@ -220,14 +233,6 @@ function rankOne(viewer: UserRow, ctx: DiscoverContext): RankedDiscoverUser[] {
   });
 
   return ranked;
-}
-
-export async function rankDiscoverUsers(viewerId: string, limit = 24): Promise<RankedDiscoverUser[]> {
-  const ctx = await loadDiscoverContext(viewerId);
-  if (!ctx) return [];
-  const viewer = await findUserById(viewerId);
-  if (!viewer) return [];
-  return rankOne(viewer, ctx).slice(0, limit);
 }
 
 export async function rankAllDiscoverUsers(viewerId: string): Promise<RankedDiscoverUser[]> {

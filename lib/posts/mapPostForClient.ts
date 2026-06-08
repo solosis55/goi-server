@@ -1,4 +1,3 @@
-import type { ApiComment } from "@/lib/types/comment";
 import type { ApiPost } from "@/lib/types/post";
 import type { ClientComment, ClientPost } from "@/lib/types/clientPost";
 
@@ -23,19 +22,6 @@ export function mapCommentJson(raw: RawCommentJson): ClientComment {
     content: raw.content,
     createdAt: raw.created_at,
     updatedAt: raw.updated_at,
-  };
-}
-
-export function mapApiCommentForClient(comment: ApiComment, author?: { username: string; avatarUrl: string }): ClientComment {
-  return {
-    id: comment.id,
-    postId: comment.postId,
-    userId: comment.userId,
-    authorUsername: author?.username ?? "Usuario",
-    authorAvatarUrl: author?.avatarUrl ?? "",
-    content: comment.content,
-    createdAt: comment.createdAt,
-    updatedAt: comment.updatedAt,
   };
 }
 

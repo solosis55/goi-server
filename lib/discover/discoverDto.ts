@@ -1,4 +1,3 @@
-import { getOutgoingFollowStatusMap } from "@/lib/social/followsRepository";
 import { mapUserRowToSafeUser } from "@/lib/users/types";
 import type { RankedDiscoverUser } from "@/lib/discover/discoverUsers";
 import type { UserRow } from "@/lib/users/types";
@@ -31,6 +30,8 @@ export function mapRankedToDiscoverDto(
     reason: row.reason,
     activeThisWeek: row.activeThisWeek,
     trainedThisWeek: row.trainedThisWeek,
+    distanceKm: row.distanceKm,
+    nearby: row.nearby,
   };
 }
 
@@ -50,8 +51,4 @@ export function mapUserToDiscoverDto(
     activeThisWeek: false,
     trainedThisWeek: false,
   };
-}
-
-export async function loadOutgoingFollowStatusMap(viewerId: string) {
-  return getOutgoingFollowStatusMap(viewerId);
 }

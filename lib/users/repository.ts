@@ -3,6 +3,7 @@ import type { UserRow } from "@/lib/users/types";
 
 const USER_COLUMNS = `id, username, email, password_hash, bio, goal, avatar_url,
   banner_url, banner_show_in_feed, website_url, instagram_url, strava_url, location,
+  latitude, longitude, location_updated_at,
   profile_visibility, pinned_post_id, discoverable, notification_prefs, created_at, updated_at`;
 
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
@@ -115,6 +116,8 @@ export type ProfileUpdateInput = {
   instagramUrl?: string;
   stravaUrl?: string;
   location?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   profileVisibility?: string;
   pinnedPostId?: string | null;
 };
@@ -138,6 +141,9 @@ export async function updateUserProfile(
        instagram_url = COALESCE($9, instagram_url),
        strava_url = COALESCE($10, strava_url),
        location = COALESCE($11, location),
+       latitude = CASE WHEN $14::boolean THEN $15::double precision ELSE latitude END,
+       longitude = CASE WHEN $14::boolean THEN $16::double precision ELSE longitude END,
+       location_updated_at = CASE WHEN $14::boolean THEN NOW() ELSE location_updated_at END,
        profile_visibility = COALESCE($12, profile_visibility),
        pinned_post_id = COALESCE($13, pinned_post_id),
        updated_at = NOW()
@@ -157,6 +163,9 @@ export async function updateUserProfile(
       input.location ?? null,
       input.profileVisibility ?? null,
       input.pinnedPostId !== undefined ? input.pinnedPostId : null,
+      input.latitude !== undefined,
+      input.latitude ?? null,
+      input.longitude ?? null,
     ]
   );
   return rows[0] ?? null;

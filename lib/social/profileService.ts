@@ -26,5 +26,5 @@ export async function getProfileForViewer(viewerId: string, targetUserId: string
 export async function updateProfileForUser(userId: string, input: ProfileUpdateInput) {
   const updated = await updateUserProfile(userId, input);
   if (!updated) return null;
-  return { message: "profile updated", user: mapUserRowToSafeUser(updated, { includeEmail: true }) };
+  return { message: "profile updated", user: mapUserRowToSafeUser(updated, { includeEmail: true, isOwner: true }) };
 }

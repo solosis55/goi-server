@@ -14,6 +14,7 @@ const steps = [
   "node scripts/ensure-user-profile-columns.mjs",
   "node scripts/ensure-social-tables.mjs",
   "node scripts/ensure-auth-profile-extras.mjs",
+  "node scripts/ensure-user-geo-columns.mjs",
 ];
 
 console.log("Configurando esquema Neon para Goi Server…\n");

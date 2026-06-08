@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getAuthUserIdFromRequest, requireAuthUserId } from "@/lib/auth/requestAuth";
+import { requireAuthUserId } from "@/lib/auth/requestAuth";
 import { serverError, validationError } from "@/lib/http/apiError";
-import { getPostForClient, listPostsForFeed } from "@/lib/posts/listPostsWithRelations";
+import { getPostForClient } from "@/lib/posts/listPostsWithRelations";
 import { mapPostForClient } from "@/lib/posts/mapPostForClient";
 import { mapPostRow } from "@/lib/posts/mapPost";
 import { persistPostMediaItems } from "@/lib/uploads/postMediaStorage";
@@ -11,19 +11,7 @@ import { parseCreatePostRequest } from "@/lib/posts/parseCreatePostRequest";
 import { findUserById } from "@/lib/users/repository";
 import type { PostRow } from "@/lib/types/post";
 
-const LEGACY_LIST_CAP = 50;
-
-/** GET listado acotado (legacy). POST crea publicación (JSON o multipart). */
-export async function GET(request: Request) {
-  try {
-    const viewerUserId = getAuthUserIdFromRequest(request);
-    const posts = await listPostsForFeed(viewerUserId, LEGACY_LIST_CAP);
-    return NextResponse.json(posts);
-  } catch {
-    return serverError("No se pudieron listar las publicaciones");
-  }
-}
-
+/** POST crea publicación (JSON o multipart). */
 export async function POST(request: Request) {
   const auth = requireAuthUserId(request);
   if (auth instanceof Response) return auth;

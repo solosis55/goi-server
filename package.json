@@ -20,6 +20,7 @@
     "db:migrate-workouts": "node scripts/migrate-workouts-from-store.mjs",
     "db:ensure-social-tables": "node scripts/ensure-social-tables.mjs",
     "db:ensure-auth-profile-extras": "node scripts/ensure-auth-profile-extras.mjs",
+    "db:ensure-geo": "node scripts/ensure-user-geo-columns.mjs",
     "db:setup": "node scripts/db-setup-all.mjs"
   },
   "dependencies": {

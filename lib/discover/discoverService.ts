@@ -1,9 +1,7 @@
 import { filterRankedByFacet, parseDiscoverFacet } from "@/lib/discover/discoverFacet";
-import {
-  loadOutgoingFollowStatusMap,
-  mapRankedToDiscoverDto,
-} from "@/lib/discover/discoverDto";
+import { mapRankedToDiscoverDto } from "@/lib/discover/discoverDto";
 import { rankAllDiscoverUsers } from "@/lib/discover/discoverUsers";
+import { getOutgoingFollowStatusMap } from "@/lib/social/followsRepository";
 import { findUserById } from "@/lib/users/repository";
 
 export async function getDiscoverPage(
@@ -18,7 +16,7 @@ export async function getDiscoverPage(
 
   const [rankedAll, statusMap] = await Promise.all([
     rankAllDiscoverUsers(viewerId),
-    loadOutgoingFollowStatusMap(viewerId),
+    getOutgoingFollowStatusMap(viewerId),
   ]);
 
   const ranked = filterRankedByFacet(rankedAll, facet, viewer);

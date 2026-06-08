@@ -99,18 +99,6 @@ const POST_CORE_DETAIL = `
   p.created_at,
   p.updated_at`;
 
-/** Listado global; params: [viewerUserId | null] */
-export const LIST_POSTS_WITH_RELATIONS_SQL = `
-SELECT
-  ${POST_CORE_LIST},
-  ${likesFields("$1")},
-  ${COMMENTS_AGG},
-  ${TAGS_AGG}
-FROM posts p
-INNER JOIN users u ON u.id = p.user_id
-ORDER BY p.created_at DESC
-`.trim();
-
 /** Feed paginado; params: [viewerUserId | null, limit] */
 export const LIST_POSTS_FEED_SQL = `
 SELECT

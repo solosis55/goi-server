@@ -1,3 +1,4 @@
+import { isNearbyMatch } from "@/lib/geo/nearby";
 import type { UserRow } from "@/lib/users/types";
 import type { RankedDiscoverUser } from "@/lib/discover/discoverUsers";
 
@@ -22,13 +23,6 @@ function norm(value: string | undefined | null): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-function isNearby(viewerLocation: string, candidate: UserRow): boolean {
-  const a = norm(viewerLocation);
-  const b = norm(candidate.location);
-  if (!a || !b) return false;
-  return a === b || a.includes(b) || b.includes(a);
-}
-
 export function filterRankedByFacet(
   ranked: RankedDiscoverUser[],
   facet: DiscoverFacetParam,
@@ -45,7 +39,7 @@ export function filterRankedByFacet(
       case "sameGoal":
         return viewerGoal.length > 0 && viewerGoal === norm(row.user.goal);
       case "nearby":
-        return isNearby(viewer.location ?? "", row.user);
+        return row.nearby || isNearbyMatch(viewer, row.user).nearby;
       default:
         return true;
     }

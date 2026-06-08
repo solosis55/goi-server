@@ -56,6 +56,8 @@ export async function PUT(request: Request, context: RouteContext) {
       instagramUrl: data.instagramUrl,
       stravaUrl: data.stravaUrl,
       location: data.location,
+      latitude: data.latitude,
+      longitude: data.longitude,
       profileVisibility: data.profileVisibility,
       pinnedPostId: data.pinnedPostId,
     });

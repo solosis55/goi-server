@@ -24,6 +24,8 @@
     "db:ensure-social-tables": "node scripts/ensure-social-tables.mjs",
     "db:ensure-auth-profile-extras": "node scripts/ensure-auth-profile-extras.mjs",
     "db:ensure-geo": "node scripts/ensure-user-geo-columns.mjs",
+    "db:ensure-email-verification": "node scripts/ensure-email-verification-columns.mjs",
+    "db:remove-demo-users": "node scripts/remove-demo-users.mjs",
     "db:setup": "node scripts/db-setup-all.mjs"
   },
   "dependencies": {
@@ -33,6 +35,7 @@
     "next": "^16.2.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "resend": "^6.16.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

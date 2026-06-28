@@ -38,6 +38,10 @@ export async function POST(request: Request) {
       return jsonError(401, "AUTH_INVALID_CREDENTIALS", "invalid credentials");
     }
 
+    if (!user.email_verified) {
+      return jsonError(403, "AUTH_EMAIL_NOT_VERIFIED", "email not verified");
+    }
+
     return NextResponse.json({
       message: "login successful",
       user: mapUserRowToSafeUser(user),

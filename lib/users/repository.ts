@@ -4,7 +4,8 @@ import type { UserRow } from "@/lib/users/types";
 const USER_COLUMNS = `id, username, email, password_hash, bio, goal, avatar_url,
   banner_url, banner_show_in_feed, website_url, instagram_url, strava_url, location,
   latitude, longitude, location_updated_at,
-  profile_visibility, pinned_post_id, discoverable, notification_prefs, created_at, updated_at`;
+  profile_visibility, pinned_post_id, discoverable, notification_prefs,
+  email_verified, created_at, updated_at`;
 
 export async function findUserByEmail(email: string): Promise<UserRow | null> {
   const rows = await query<UserRow>(

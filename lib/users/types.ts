@@ -21,6 +21,7 @@ export type UserRow = {
   pinned_post_id: string | null;
   discoverable: boolean;
   notification_prefs: { mutedTypes: string[] };
+  email_verified: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -52,6 +53,7 @@ export type SafeUserDto = {
   requireAuthToView: boolean;
   defaultPostVisibility: "public" | "followers" | "private";
   pinnedPostId: string;
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -101,6 +103,7 @@ export function mapUserRowToSafeUser(
     requireAuthToView: false,
     defaultPostVisibility: "public",
     pinnedPostId: row.pinned_post_id ?? "",
+    ...(isOwner ? { emailVerified: row.email_verified !== false } : {}),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

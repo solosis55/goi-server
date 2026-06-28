@@ -2,6 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { query } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { findUserByEmail } from "@/lib/users/repository";
+import { deliverPasswordResetEmail } from "@/lib/auth/passwordResetEmail";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
@@ -43,8 +44,9 @@ export async function requestPasswordReset(emailRaw: unknown): Promise<{
     [user.id, tokenHash, expires]
   );
 
-  if (process.env.AUTH_RESET_RETURN_TOKEN === "true") {
-    return { message, devResetToken: token };
+  const delivered = await deliverPasswordResetEmail(user.email, token);
+  if (delivered.devResetToken) {
+    return { message, devResetToken: delivered.devResetToken };
   }
   return { message };
 }
@@ -55,8 +57,8 @@ export async function resetPasswordWithToken(
 ): Promise<{ message: string }> {
   const token = typeof tokenRaw === "string" ? tokenRaw : "";
   const password = typeof passwordRaw === "string" ? passwordRaw : "";
-  if (!token || password.length < 6) {
-    throw Object.assign(new Error("token and password (min 6 chars) are required"), {
+  if (!token || password.length < 8) {
+    throw Object.assign(new Error("token and password (min 8 chars) are required"), {
       code: "AUTH_RESET_INVALID_INPUT",
     });
   }

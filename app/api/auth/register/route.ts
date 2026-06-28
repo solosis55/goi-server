@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { sendVerificationEmailForUser } from "@/lib/auth/emailVerification";
+import { isPgUniqueViolation } from "@/lib/auth/pgErrors";
 import { hashPassword } from "@/lib/auth/password";
-import { signAuthToken } from "@/lib/auth/jwt";
 import { jsonError, validationError } from "@/lib/http/apiError";
 import { registerSchema } from "@/lib/schemas/authSchema";
 import { mapUserRowToSafeUser } from "@/lib/users/types";
@@ -34,15 +35,27 @@ export async function POST(request: Request) {
       passwordHash,
     });
 
+    const emailResult = await sendVerificationEmailForUser(user.id, user.email);
+
     return NextResponse.json(
       {
         message: "user registered",
-        user: mapUserRowToSafeUser(user),
-        token: signAuthToken(user.id),
+        user: mapUserRowToSafeUser(user, { includeEmail: true, isOwner: true }),
+        requiresEmailVerification: true,
+        ...(emailResult.devVerificationToken
+          ? { devVerificationToken: emailResult.devVerificationToken }
+          : {}),
       },
       { status: 201 }
     );
-  } catch {
+  } catch (err) {
+    if (isPgUniqueViolation(err, "username")) {
+      return jsonError(409, "AUTH_USERNAME_IN_USE", "username already in use");
+    }
+    if (isPgUniqueViolation(err, "email")) {
+      return jsonError(409, "AUTH_EMAIL_IN_USE", "email already in use");
+    }
+    console.error("[register]", err);
     return jsonError(500, "API_ERROR", "No se pudo registrar el usuario");
   }
 }

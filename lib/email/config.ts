@@ -11,6 +11,11 @@ export function getWebAppUrl(): string {
   return url.replace(/\/$/, "");
 }
 
+export function getPublicApiUrl(): string {
+  const url = trimEnv("GOI_PUBLIC_API_URL") || "https://goi-server.onrender.com/api";
+  return url.replace(/\/$/, "");
+}
+
 export function getContactEmail(): string {
   return trimEnv("CONTACT_EMAIL") || "support@example.com";
 }

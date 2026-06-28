@@ -1,4 +1,4 @@
-import { getWebAppUrl } from "@/lib/email/config";
+import { getWebAppUrl, getPublicApiUrl } from "@/lib/email/config";
 
 function escapeHtml(value: string): string {
   return value
@@ -15,9 +15,28 @@ export function buildPasswordResetLinks(token: string) {
 }
 
 export function buildEmailVerificationLinks(token: string) {
+  const api = `${getPublicApiUrl()}/auth/verify-email?token=${encodeURIComponent(token)}`;
   const web = `${getWebAppUrl()}/?verify=${encodeURIComponent(token)}`;
   const app = `goi://verify-email?token=${encodeURIComponent(token)}`;
-  return { web, app };
+  return { api, web, app };
+}
+
+/** Botón CTA compatible con Outlook/Hotmail (evita esquemas custom en href). */
+function primaryButtonHtml(href: string, label: string): string {
+  const safeHref = escapeHtml(href);
+  const safeLabel = escapeHtml(label);
+  return `
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td style="border-radius:8px;background:#c9a227;">
+          <a href="${safeHref}" target="_blank" rel="noopener noreferrer"
+             style="display:inline-block;padding:14px 28px;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;color:#1a1a1a;text-decoration:none;border-radius:8px;">
+            ${safeLabel}
+          </a>
+        </td>
+      </tr>
+    </table>
+  `.trim();
 }
 
 export function passwordResetEmailContent(token: string) {
@@ -26,39 +45,47 @@ export function passwordResetEmailContent(token: string) {
   const text = [
     "Has solicitado restablecer tu contraseña en Goi.",
     "",
-    `Web: ${web}`,
-    `App: ${app}`,
+    "Abre este enlace en el navegador:",
+    web,
+    "",
+    "Si usas la app Goi en el móvil, copia y pega en el navegador del teléfono o abre la app desde el enlace de la web.",
+    `Enlace app (copiar si hace falta): ${app}`,
     "",
     "El enlace caduca en 1 hora. Si no fuiste tú, ignora este correo.",
   ].join("\n");
   const html = `
-    <p>Has solicitado restablecer tu contraseña en <strong>Goi</strong>.</p>
-    <p><a href="${escapeHtml(web)}">Abrir en la web</a></p>
-    <p><a href="${escapeHtml(app)}">Abrir en la app</a></p>
-    <p style="color:#666;font-size:13px;">El enlace caduca en 1 hora.</p>
+    <div style="font-family:Arial,sans-serif;color:#222;line-height:1.5;max-width:520px;">
+      <p>Has solicitado restablecer tu contraseña en <strong>Goi</strong>.</p>
+      ${primaryButtonHtml(web, "Restablecer contraseña")}
+      <p style="color:#666;font-size:13px;">El enlace caduca en 1 hora. Si no fuiste tú, ignora este correo.</p>
+      <p style="color:#888;font-size:12px;word-break:break-all;">Enlace directo: ${escapeHtml(web)}</p>
+    </div>
   `.trim();
   return { subject, html, text };
 }
 
 export function emailVerificationEmailContent(token: string) {
-  const { web, app } = buildEmailVerificationLinks(token);
+  const { api, app } = buildEmailVerificationLinks(token);
   const subject = "Confirma tu email en Goi";
   const text = [
     "Gracias por registrarte en Goi.",
     "",
-    "Confirma tu correo para activar tu cuenta:",
+    "Confirma tu correo para activar tu cuenta (abre este enlace):",
+    api,
     "",
-    `Web: ${web}`,
-    `App: ${app}`,
+    "En la app Goi: " + app,
     "",
     "El enlace caduca en 24 horas.",
   ].join("\n");
   const html = `
-    <p>Gracias por registrarte en <strong>Goi</strong>.</p>
-    <p>Confirma tu correo para activar tu cuenta:</p>
-    <p><a href="${escapeHtml(web)}">Confirmar en la web</a></p>
-    <p><a href="${escapeHtml(app)}">Confirmar en la app</a></p>
-    <p style="color:#666;font-size:13px;">El enlace caduca en 24 horas.</p>
+    <div style="font-family:Arial,sans-serif;color:#222;line-height:1.5;max-width:520px;">
+      <p>Gracias por registrarte en <strong>Goi</strong>.</p>
+      <p>Confirma tu correo para activar tu cuenta:</p>
+      ${primaryButtonHtml(api, "Confirmar mi email")}
+      <p style="color:#666;font-size:13px;">El enlace caduca en 24 horas.</p>
+      <p style="color:#888;font-size:12px;word-break:break-all;">Enlace directo: ${escapeHtml(api)}</p>
+      <p style="color:#888;font-size:12px;">Si ya tienes la app: ${escapeHtml(app)}</p>
+    </div>
   `.trim();
   return { subject, html, text };
 }

@@ -47,6 +47,22 @@ Servidor en **http://localhost:4000**
 
 ---
 
+## Producción (Render)
+
+| URL | Uso |
+|-----|-----|
+| `https://goi-server.onrender.com/api` | API (App + Web) |
+| `https://goi-server.onrender.com/api/health` | Health check |
+
+Variables en el dashboard Render: `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, `GOI_UPLOADS_PATH=/tmp/goi-uploads`, `GOI_DATA_DIR=/tmp/goi-data`.
+
+- **Build Command:** `npm install --include=dev && npm run build`
+- **Start Command:** `npx next start -H 0.0.0.0 -p $PORT`
+
+Blueprint de referencia: [`render.yaml`](./render.yaml). Tras cambios en schema: `npm run db:setup` contra la misma `DATABASE_URL`.
+
+---
+
 ## Documentación
 
 - [`docs/backend-teoria.md`](./docs/backend-teoria.md) — patrón cliente-servidor, REST, códigos HTTP (entrega práctica Fase 7)

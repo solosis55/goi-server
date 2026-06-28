@@ -1,0 +1,20 @@
+# Render Blueprint — Goi Server (https://render.com/docs/blueprint-spec)
+services:
+  - type: web
+    name: goi-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npx next start -H 0.0.0.0 -p $PORT
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GOI_UPLOADS_PATH
+        value: /tmp/goi-uploads
+      - key: GOI_DATA_DIR
+        value: /tmp/goi-data
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

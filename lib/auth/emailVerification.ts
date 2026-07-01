@@ -30,22 +30,22 @@ async function persistVerificationToken(userId: string, token: string): Promise<
 export async function sendVerificationEmailForUser(
   userId: string,
   email: string
-): Promise<{ devVerificationToken?: string }> {
+): Promise<{ sent: boolean; devVerificationToken?: string }> {
   const token = randomBytes(32).toString("hex");
   await persistVerificationToken(userId, token);
 
   if (canSendRealEmail()) {
     const body = emailVerificationEmailContent(token);
     await sendEmail({ to: email, ...body });
-    return {};
+    return { sent: true };
   }
 
   if (isDevReturnTokensEnabled()) {
-    return { devVerificationToken: token };
+    return { sent: false, devVerificationToken: token };
   }
 
   console.warn("[email] Verification skipped: configure RESEND_API_KEY or AUTH_RESET_RETURN_TOKEN=true");
-  return {};
+  return { sent: false };
 }
 
 export async function verifyEmailWithToken(tokenRaw: unknown): Promise<{ message: string }> {
@@ -84,6 +84,7 @@ export async function verifyEmailWithToken(tokenRaw: unknown): Promise<{ message
 export async function resendVerificationEmail(emailRaw: unknown): Promise<{
   message: string;
   devVerificationToken?: string;
+  verificationEmailSent?: boolean;
 }> {
   const normalizedEmail =
     typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
@@ -100,7 +101,7 @@ export async function resendVerificationEmail(emailRaw: unknown): Promise<{
   }
 
   const extra = await sendVerificationEmailForUser(user.id, user.email);
-  return { message, ...extra };
+  return { message, verificationEmailSent: extra.sent, ...extra };
 }
 
 export async function isUserEmailVerified(userId: string): Promise<boolean> {

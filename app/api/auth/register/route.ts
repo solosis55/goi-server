@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sendVerificationEmailForUser } from "@/lib/auth/emailVerification";
 import { isPgUniqueViolation } from "@/lib/auth/pgErrors";
 import { hashPassword } from "@/lib/auth/password";
 import { jsonError, validationError } from "@/lib/http/apiError";
@@ -35,16 +34,11 @@ export async function POST(request: Request) {
       passwordHash,
     });
 
-    const emailResult = await sendVerificationEmailForUser(user.id, user.email);
-
     return NextResponse.json(
       {
         message: "user registered",
         user: mapUserRowToSafeUser(user, { includeEmail: true, isOwner: true }),
         requiresEmailVerification: true,
-        ...(emailResult.devVerificationToken
-          ? { devVerificationToken: emailResult.devVerificationToken }
-          : {}),
       },
       { status: 201 }
     );

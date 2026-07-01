@@ -1,9 +1,6 @@
 /**
- * Elimina cuentas demo y de prueba en Neon (emails *@test.com, *@goi.test).
- * No toca cuentas reales (p. ej. hotmail.com).
- *
- * Uso: npm run db:remove-demo-users
- * Auditar antes: npm run db:audit-demo-users
+ * Lista cuentas demo / de prueba en Neon (no borra).
+ * Uso: npm run db:audit-demo-users
  */
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,26 +21,28 @@ const pool = new Pool({ connectionString: url });
 const DEMO_WHERE = `
   LOWER(email) LIKE '%@test.com'
   OR LOWER(email) LIKE '%@goi.test'
+  OR LOWER(username) IN ('demo_goi', 'demo', 'test')
 `;
 
 async function main() {
   const { rows } = await pool.query(
-    `SELECT id, email, username FROM users WHERE ${DEMO_WHERE} ORDER BY email`
+    `SELECT id, username, email, email_verified, created_at
+     FROM users
+     WHERE ${DEMO_WHERE}
+     ORDER BY email`
   );
 
   if (rows.length === 0) {
-    console.log("No hay usuarios demo que eliminar.");
+    console.log("OK: no hay usuarios demo en la base de datos.");
     await pool.end();
     return;
   }
 
-  console.log(`Eliminando ${rows.length} usuario(s) demo:`);
+  console.log(`Encontrados ${rows.length} usuario(s) demo / de prueba:`);
   for (const row of rows) {
-    console.log(`  - ${row.username} (${row.email})`);
-    await pool.query(`DELETE FROM users WHERE id = $1`, [row.id]);
+    console.log(`  - ${row.username} <${row.email}> verified=${row.email_verified}`);
   }
-
-  console.log("Listo.");
+  console.log("\nPara eliminarlos: npm run db:remove-demo-users");
   await pool.end();
 }
 

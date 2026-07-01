@@ -1,5 +1,6 @@
 /**
- * Inserta un usuario demo para probar POST /api/posts (requiere user_id FK).
+ * SOLO desarrollo local. Inserta demo@goi.test (password no usable).
+ * No ejecutar en Neon prod. Usar npm run db:audit-demo-users para revisar cuentas demo.
  * Uso: npm run db:seed
  */
 import { config } from "dotenv";

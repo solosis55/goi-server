@@ -87,6 +87,33 @@ Contraseña mínima: **8 caracteres** (server + Web + App).
 
 ---
 
+## Sesión expirada `AUTH_SESSION_STALE` (ítem 1.13)
+
+Ocurre cuando el JWT es válido pero el **usuario ya no existe** en Neon (cuenta borrada, otro entorno, etc.). El server responde `401` + código `AUTH_SESSION_STALE` en escrituras (p. ej. crear post, like).
+
+| Cliente | Comportamiento |
+|---------|----------------|
+| **Web** | `apiFetch` emite `auth:expired` con `detail.code` → `AuthContext` limpia `localStorage` → pantalla login con mensaje (`sessionStorage` `goi:sessionExpired`) |
+| **App** | `apiFetch` limpia sesión + `AuthNavigationSync` → `/login?sessionExpired=1&stale=1` |
+
+**Prueba manual:** inicia sesión → borra tu usuario en Neon (`delete-user-by-email.mjs`) → intenta crear un post o dar like → debe volver al login con mensaje claro.
+
+---
+
+## Usuarios demo en prod (ítem 1.15)
+
+No debe haber cuentas `*@test.com` ni `*@goi.test` en Neon compartida.
+
+```bash
+cd Goi Server
+npm run db:audit-demo-users    # listar
+npm run db:remove-demo-users   # eliminar
+```
+
+`npm run db:seed` es **solo desarrollo local** (inserta `demo@goi.test`).
+
+---
+
 ## Sandbox Resend
 
 En modo sandbox, Resend solo entrega a direcciones autorizadas en el dashboard. Para pruebas reales usa el Hotmail verificado o añade el destinatario en Resend.

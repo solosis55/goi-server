@@ -7,12 +7,13 @@ import {
   normalizeCommentsJson,
 } from "@/lib/posts/mapPostForClient";
 import {
+  buildListPostsFeedPageSql,
   GET_POST_WITH_RELATIONS_SQL,
   LIST_POSTS_BY_USER_GRID_SQL,
   LIST_POSTS_BY_USER_SQL,
-  LIST_POSTS_FEED_SQL,
 } from "@/lib/posts/postsJoinQuery";
 import { cursorFromClientPost, decodePostCursor } from "@/lib/posts/postCursor";
+import { filterPostsForFeed } from "@/lib/posts/feedVisibility";
 import { enrichPostsWithSessionMeta } from "@/lib/posts/postSessionMeta";
 import type { ClientPost } from "@/lib/types/clientPost";
 import type { ApiComment, CommentRow } from "@/lib/types/comment";
@@ -43,14 +44,55 @@ function rowToClientPost(row: JoinRow, opts?: { feedMedia?: boolean }): ClientPo
   });
 }
 
-/** Feed: límite en SQL; media = solo rutas `/uploads/posts/...`. */
+/** Feed paginado; media = solo rutas `/uploads/posts/...`. */
 export async function listPostsForFeed(
   viewerUserId: string | null | undefined,
   fetchLimit: number
 ): Promise<ClientPost[]> {
-  const cap = Math.min(Math.max(fetchLimit, 1), 80);
-  const rows = await query<JoinRow>(LIST_POSTS_FEED_SQL, [viewerUserId ?? null, cap]);
-  return enrichPostsWithSessionMeta(rows.map((row) => rowToClientPost(row, { feedMedia: true })));
+  const page = await listPostsForFeedPage(viewerUserId, "all", {
+    limit: fetchLimit,
+    cursor: null,
+  });
+  return page.posts;
+}
+
+export type FeedPostsPageResult = {
+  posts: ClientPost[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+/** Feed con cursor; el filtro `scope` se aplica tras la consulta SQL. */
+export async function listPostsForFeedPage(
+  viewerUserId: string | null | undefined,
+  scope: "all" | "following",
+  opts: { limit: number; cursor?: string | null }
+): Promise<FeedPostsPageResult> {
+  const limit = Math.min(Math.max(opts.limit, 1), 50);
+  const rawLimit = Math.min(limit * 3, 80);
+
+  const params: unknown[] = [viewerUserId ?? null];
+  let cursorClause = "";
+  const decoded = opts.cursor ? decodePostCursor(opts.cursor) : null;
+  if (decoded) {
+    params.push(decoded.createdAt, decoded.id);
+    cursorClause = `AND (p.created_at, p.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`;
+  }
+  params.push(rawLimit + 1);
+
+  const sql = buildListPostsFeedPageSql(cursorClause, params.length);
+
+  const rows = await query<JoinRow>(sql, params);
+  const batch = await enrichPostsWithSessionMeta(
+    rows.map((row) => rowToClientPost(row, { feedMedia: true }))
+  );
+  const visible = await filterPostsForFeed(batch, viewerUserId, scope);
+  const hasMore = visible.length > limit || rows.length > rawLimit;
+  const posts = visible.slice(0, limit);
+  const nextCursor =
+    hasMore && posts.length > 0 ? cursorFromClientPost(posts[posts.length - 1]!) : null;
+
+  return { posts, nextCursor, hasMore };
 }
 
 /** Posts visibles para el viewer (perfil / paginación). */

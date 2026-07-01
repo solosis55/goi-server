@@ -99,7 +99,23 @@ const POST_CORE_DETAIL = `
   p.created_at,
   p.updated_at`;
 
-/** Feed paginado; params: [viewerUserId | null, limit] */
+/** Feed paginado con cursor opcional; params: [viewerUserId | null, ...cursor?, limit] */
+export function buildListPostsFeedPageSql(cursorClause: string, limitParam: number): string {
+  return `
+SELECT
+  ${POST_CORE_LIST_FEED},
+  ${likesFields("$1")},
+  ${COMMENTS_AGG},
+  ${TAGS_AGG}
+FROM posts p
+INNER JOIN users u ON u.id = p.user_id
+WHERE 1=1
+${cursorClause}
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT $${limitParam}`.trim();
+}
+
+/** Feed primera página (sin cursor); params: [viewerUserId | null, limit] */
 export const LIST_POSTS_FEED_SQL = `
 SELECT
   ${POST_CORE_LIST_FEED},

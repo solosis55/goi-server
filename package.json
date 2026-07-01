@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "db:schema": "node scripts/apply-schema.mjs",
     "db:seed": "node scripts/seed-demo-user.mjs",
+    "db:seed-feed-demos": "node scripts/seed-feed-demos.mjs",
     "db:migrate-users": "node scripts/migrate-users-from-store.mjs",
     "db:migrate-posts": "node scripts/migrate-posts-from-store.mjs",
     "db:migrate-post-media": "node scripts/migrate-post-media-to-files.mjs",

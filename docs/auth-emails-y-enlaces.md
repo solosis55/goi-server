@@ -75,16 +75,16 @@ Definido en `Goi App/constants/legalUrls.ts`.
 ## Flujos API (resumen)
 
 ```
-Registro     POST /auth/register          → crea cuenta (sin enviar email)
-             POST /auth/resend-verification → el cliente lo llama justo después del registro
+Registro     POST /auth/register          → crea cuenta e intenta enviar email de verificación
+             (respuesta: verificationEmailSent, devVerificationToken en dev)
 Login        POST /auth/login             → 403 AUTH_EMAIL_NOT_VERIFIED si no verificado
-Reenvío      POST /auth/resend-verification
+Reenvío      POST /auth/resend-verification → si falló el envío en registro o el usuario lo pide
 Verify       GET  /auth/verify-email?token=   (email) + POST /auth/verify-email { token }
 Forgot       POST /auth/forgot-password   { email }
 Reset        GET  /auth/reset-password?token= (email) + POST /auth/reset-password { token, password }
 ```
 
-**Importante:** el correo de verificación se envía siempre vía `resend-verification` (Web y App lo llaman tras un registro exitoso). Así register y reenvío manual usan el mismo camino Resend.
+**Importante:** el correo de verificación se envía en `register` (con `verificationEmailSent` en la respuesta). Web y App usan `resend-verification` solo para reintentos manuales.
 
 Contraseña mínima: **8 caracteres** (server + Web + App).
 

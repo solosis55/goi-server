@@ -18,6 +18,9 @@ export async function POST(request: Request) {
     if (code === "AUTH_VERIFY_INVALID_INPUT") {
       return jsonError(400, code, (err as Error).message);
     }
+    if (code === "AUTH_EMAIL_SEND_FAILED") {
+      return jsonError(502, code, (err as Error).message);
+    }
     return serverError("No se pudo reenviar el correo de verificación");
   }
 }

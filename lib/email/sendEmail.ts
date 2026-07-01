@@ -28,7 +28,8 @@ export async function sendEmail(input: SendEmailInput): Promise<void> {
   });
 
   if (error) {
-    throw new Error(error.message || "Resend send failed");
+    const message = error.message || "Resend send failed";
+    throw Object.assign(new Error(message), { code: "AUTH_EMAIL_SEND_FAILED" });
   }
 }
 

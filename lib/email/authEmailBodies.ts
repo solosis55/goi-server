@@ -9,9 +9,10 @@ function escapeHtml(value: string): string {
 }
 
 export function buildPasswordResetLinks(token: string) {
+  const api = `${getPublicApiUrl()}/auth/reset-password?token=${encodeURIComponent(token)}`;
   const web = `${getWebAppUrl()}/?reset=${encodeURIComponent(token)}`;
   const app = `goi://reset-password?token=${encodeURIComponent(token)}`;
-  return { web, app };
+  return { api, web, app };
 }
 
 export function buildEmailVerificationLinks(token: string) {
@@ -40,25 +41,25 @@ function primaryButtonHtml(href: string, label: string): string {
 }
 
 export function passwordResetEmailContent(token: string) {
-  const { web, app } = buildPasswordResetLinks(token);
+  const { api, app } = buildPasswordResetLinks(token);
   const subject = "Restablece tu contraseña en Goi";
   const text = [
     "Has solicitado restablecer tu contraseña en Goi.",
     "",
-    "Abre este enlace en el navegador:",
-    web,
+    "Abre este enlace para elegir una contraseña nueva:",
+    api,
     "",
-    "Si usas la app Goi en el móvil, copia y pega en el navegador del teléfono o abre la app desde el enlace de la web.",
-    `Enlace app (copiar si hace falta): ${app}`,
+    "En la app Goi: " + app,
     "",
     "El enlace caduca en 1 hora. Si no fuiste tú, ignora este correo.",
   ].join("\n");
   const html = `
     <div style="font-family:Arial,sans-serif;color:#222;line-height:1.5;max-width:520px;">
       <p>Has solicitado restablecer tu contraseña en <strong>Goi</strong>.</p>
-      ${primaryButtonHtml(web, "Restablecer contraseña")}
+      ${primaryButtonHtml(api, "Restablecer contraseña")}
       <p style="color:#666;font-size:13px;">El enlace caduca en 1 hora. Si no fuiste tú, ignora este correo.</p>
-      <p style="color:#888;font-size:12px;word-break:break-all;">Enlace directo: ${escapeHtml(web)}</p>
+      <p style="color:#888;font-size:12px;word-break:break-all;">Enlace directo: ${escapeHtml(api)}</p>
+      <p style="color:#888;font-size:12px;">Si ya tienes la app: ${escapeHtml(app)}</p>
     </div>
   `.trim();
   return { subject, html, text };
